@@ -1,7 +1,9 @@
 import { useState } from 'react'
 
 import type { TableDataObject } from 'components/table/table-body/component'
+import { FiltersComponents } from 'components/filters'
 import { STSort, STtableTh, STtableTr } from 'components/table/style'
+import { STSpace } from './style'
 
 // ~~~~~~ Types
 
@@ -18,11 +20,16 @@ type Props = {
   tableData: TableDataObject[]
 
   handleSorting(sortOrder: ColumnsTypes['sortbyOrder'], sortField?: string | number): void
+  onFilter: (
+    accessor: string,
+    value: string | number,
+    kindOfSearch: ColumnsTypes['filterKind']
+  ) => void
 }
 
 // ~~~~~~ Component
 
-export const TableHead: React.FC<Props> = ({ columns, tableData, handleSorting }) => {
+export const TableHead: React.FC<Props> = ({ columns, tableData, handleSorting, onFilter }) => {
   // ~~~~~~ State
 
   const [sortField, setSortField] = useState('')
@@ -48,7 +55,16 @@ export const TableHead: React.FC<Props> = ({ columns, tableData, handleSorting }
   return (
     <thead>
       <STtableTr>
-        {columns.map(({ label, accessor, sortable }) => {
+        {columns.map(({ label, accessor, sortable, filterKind }) => {
+          const FilterComponent = filterKind ? FiltersComponents[filterKind] : undefined
+
+          const dataAccessor = tableData.map((access) => access[accessor])
+
+          const options = [...new Set(dataAccessor)].map((data) => ({
+            label: data,
+            value: data,
+          }))
+
           const className = sortable
             ? sortField === accessor && order === 'asc'
               ? 'up'
@@ -62,6 +78,15 @@ export const TableHead: React.FC<Props> = ({ columns, tableData, handleSorting }
               <STSort className={className} onClick={() => handleSortingChange(accessor, sortable)}>
                 {label}
               </STSort>
+
+              {FilterComponent ? (
+                <FilterComponent
+                  options={options}
+                  onChange={(evt) => onFilter(accessor, evt, filterKind)}
+                />
+              ) : (
+                <STSpace />
+              )}
             </STtableTh>
           )
         })}
